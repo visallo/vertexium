@@ -10,6 +10,7 @@ import org.vertexium.accumulo.iterator.model.historicalEvents.*;
 import org.vertexium.historicalEvent.*;
 import org.vertexium.property.StreamingPropertyValueRef;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -131,8 +132,8 @@ public class HistoricalEventsIteratorConverter {
             elementId,
             byteSequenceToString(iterEvent.getEdgeId()),
             iteratorDirectionToDirection(iterEvent.getEdgeDirection()),
-            graph.getNameSubstitutionStrategy().inflate(iterEvent.getEdgeLabel()),
-            iterEvent.getOtherVertexId(),
+            graph.getNameSubstitutionStrategy().inflate(new String(iterEvent.getEdgeLabelBytes(), StandardCharsets.UTF_8)),
+            new String(iterEvent.getOtherVertexIdBytes(), StandardCharsets.UTF_8),
             byteSequenceToVisibility(iterEvent.getEdgeVisibility()),
             longToZonedDateTime(iterEvent.getTimestamp()),
             valueToObject(graph, ElementType.VERTEX, elementId, iterEvent.getData(), iterEvent.getTimestamp()),
@@ -320,8 +321,8 @@ public class HistoricalEventsIteratorConverter {
             elementId,
             byteSequenceToString(iterEvent.getEdgeId()),
             iteratorDirectionToDirection(iterEvent.getEdgeDirection()),
-            graph.getNameSubstitutionStrategy().inflate(iterEvent.getEdgeLabel()),
-            iterEvent.getOtherVertexId(),
+            graph.getNameSubstitutionStrategy().inflate(new String(iterEvent.getEdgeLabelBytes(), StandardCharsets.UTF_8)),
+            new String(iterEvent.getOtherVertexIdBytes(), StandardCharsets.UTF_8),
             byteSequenceToVisibility(iterEvent.getEdgeVisibility()),
             longToZonedDateTime(iterEvent.getTimestamp()),
             fetchHints

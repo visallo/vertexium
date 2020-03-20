@@ -14,8 +14,8 @@ import java.io.IOException;
 public class IteratorHistoricalSoftDeleteEdgeToVertexEvent extends IteratorHistoricalEvent {
     private final ByteSequence edgeId;
     private final Direction edgeDirection;
-    private final String edgeLabel;
-    private final String otherVertexId;
+    private final byte[] edgeLabelBytes;
+    private final byte[] otherVertexIdBytes;
     private final ByteSequence edgeVisibility;
     private final Value data;
 
@@ -23,8 +23,8 @@ public class IteratorHistoricalSoftDeleteEdgeToVertexEvent extends IteratorHisto
         String elementId,
         ByteSequence edgeId,
         Direction edgeDirection,
-        String edgeLabel,
-        String otherVertexId,
+        byte[] edgeLabelBytes,
+        byte[] otherVertexIdBytes,
         ByteSequence edgeVisibility,
         long timestamp,
         Value data
@@ -32,8 +32,8 @@ public class IteratorHistoricalSoftDeleteEdgeToVertexEvent extends IteratorHisto
         super(ElementType.VERTEX, elementId, timestamp);
         this.edgeId = edgeId;
         this.edgeDirection = edgeDirection;
-        this.edgeLabel = edgeLabel;
-        this.otherVertexId = otherVertexId;
+        this.edgeLabelBytes = edgeLabelBytes;
+        this.otherVertexIdBytes = otherVertexIdBytes;
         this.edgeVisibility = edgeVisibility;
         this.data = data;
     }
@@ -46,12 +46,12 @@ public class IteratorHistoricalSoftDeleteEdgeToVertexEvent extends IteratorHisto
         return edgeDirection;
     }
 
-    public String getEdgeLabel() {
-        return edgeLabel;
+    public byte[] getEdgeLabelBytes() {
+        return edgeLabelBytes;
     }
 
-    public String getOtherVertexId() {
-        return otherVertexId;
+    public byte[] getOtherVertexIdBytes() {
+        return otherVertexIdBytes;
     }
 
     public ByteSequence getEdgeVisibility() {
@@ -61,16 +61,16 @@ public class IteratorHistoricalSoftDeleteEdgeToVertexEvent extends IteratorHisto
     static IteratorHistoricalEvent decode(DataInputStream in, String elementId, long timestamp) throws IOException {
         ByteSequence edgeId = DataInputStreamUtils.decodeByteSequence(in);
         Direction edgeDirection = DataInputStreamUtils.decodeDirection(in);
-        String edgeLabel = DataInputStreamUtils.decodeString(in);
-        String otherVertexId = DataInputStreamUtils.decodeString(in);
+        byte[] edgeLabelBytes = DataInputStreamUtils.decodeByteArray(in);
+        byte[] otherVertexIdBytes = DataInputStreamUtils.decodeByteArray(in);
         ByteSequence edgeVisibility = DataInputStreamUtils.decodeByteSequence(in);
         Value data = DataInputStreamUtils.decodeValue(in);
         return new IteratorHistoricalSoftDeleteEdgeToVertexEvent(
             elementId,
             edgeId,
             edgeDirection,
-            edgeLabel,
-            otherVertexId,
+            edgeLabelBytes,
+            otherVertexIdBytes,
             edgeVisibility,
             timestamp,
             data
@@ -82,8 +82,8 @@ public class IteratorHistoricalSoftDeleteEdgeToVertexEvent extends IteratorHisto
         super.encode(out);
         DataOutputStreamUtils.encodeByteSequence(out, getEdgeId());
         DataOutputStreamUtils.encodeDirection(out, getEdgeDirection());
-        DataOutputStreamUtils.encodeString(out, getEdgeLabel());
-        DataOutputStreamUtils.encodeString(out, getOtherVertexId());
+        DataOutputStreamUtils.encodeByteArray(out, getEdgeLabelBytes());
+        DataOutputStreamUtils.encodeByteArray(out, getOtherVertexIdBytes());
         DataOutputStreamUtils.encodeByteSequence(out, getEdgeVisibility());
         DataOutputStreamUtils.encodeValue(out, getData());
     }

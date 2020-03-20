@@ -5,7 +5,7 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import org.apache.hadoop.io.Text;
-import org.vertexium.accumulo.iterator.model.EdgeInfo;
+import org.vertexium.accumulo.iterator.model.IteratorEdgeInfo;
 import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 import org.vertexium.accumulo.iterator.model.SoftDeleteEdgeInfo;
 import org.vertexium.accumulo.iterator.model.VertexElementData;
@@ -13,7 +13,6 @@ import org.vertexium.security.Authorizations;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
 public class VertexIterator extends ElementIterator<VertexElementData> {
     public static final String CF_SIGNAL_STRING = "V";
@@ -92,14 +91,14 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
         }
 
         for (SoftDeleteEdgeInfo inSoftDelete : this.getElementData().inSoftDeletes) {
-            EdgeInfo inEdge = this.getElementData().inEdges.get(inSoftDelete.getEdgeId());
+            IteratorEdgeInfo inEdge = this.getElementData().inEdges.get(inSoftDelete.getEdgeId());
             if (inEdge != null && inSoftDelete.getTimestamp() >= inEdge.getTimestamp()) {
                 this.getElementData().inEdges.remove(inSoftDelete.getEdgeId());
             }
         }
 
         for (SoftDeleteEdgeInfo outSoftDelete : this.getElementData().outSoftDeletes) {
-            EdgeInfo outEdge = this.getElementData().outEdges.get(outSoftDelete.getEdgeId());
+            IteratorEdgeInfo outEdge = this.getElementData().outEdges.get(outSoftDelete.getEdgeId());
             if (outEdge != null && outSoftDelete.getTimestamp() >= outEdge.getTimestamp()) {
                 this.getElementData().outEdges.remove(outSoftDelete.getEdgeId());
             }
@@ -144,7 +143,7 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     }
 
     private void processOutEdge(KeyValue keyValue) {
-        EdgeInfo edgeInfo = EdgeInfo.parse(keyValue.takeValue(), keyValue.getTimestamp());
+        IteratorEdgeInfo edgeInfo = new IteratorEdgeInfo(getElementData().edgeLabels, keyValue.peekValue().get(), keyValue.getTimestamp());
         if (shouldIncludeOutEdge(edgeInfo)) {
             Text edgeId = keyValue.takeColumnQualifier();
             getElementData().outEdges.add(edgeId, edgeInfo);
@@ -152,16 +151,16 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     }
 
     private void processInEdge(KeyValue keyValue) {
-        EdgeInfo edgeInfo = EdgeInfo.parse(keyValue.takeValue(), keyValue.getTimestamp());
+        IteratorEdgeInfo edgeInfo = new IteratorEdgeInfo(getElementData().edgeLabels, keyValue.peekValue().get(), keyValue.getTimestamp());
         if (shouldIncludeInEdge(edgeInfo)) {
             Text edgeId = keyValue.takeColumnQualifier();
             getElementData().inEdges.add(edgeId, edgeInfo);
         }
     }
 
-    private boolean shouldIncludeOutEdge(EdgeInfo edgeInfo) {
-        Set<String> labels = getFetchHints().getEdgeLabelsOfEdgeRefsToInclude();
-        if (labels != null && labels.contains(edgeInfo.getLabel())) {
+    private boolean shouldIncludeOutEdge(IteratorEdgeInfo edgeInfo) {
+        List<Integer> labelIndices = getEdgeLabelIndicesOfEdgeRefsToInclude();
+        if (labelIndices != null && labelIndices.contains(edgeInfo.getLabelIndex())) {
             return true;
         }
 
@@ -170,9 +169,9 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
             || getFetchHints().isIncludeOutEdgeRefs();
     }
 
-    private boolean shouldIncludeInEdge(EdgeInfo edgeInfo) {
-        Set<String> labels = getFetchHints().getEdgeLabelsOfEdgeRefsToInclude();
-        if (labels != null && labels.contains(edgeInfo.getLabel())) {
+    private boolean shouldIncludeInEdge(IteratorEdgeInfo edgeInfo) {
+        List<Integer> labelIndices = getEdgeLabelIndicesOfEdgeRefsToInclude();
+        if (labelIndices != null && labelIndices.contains(edgeInfo.getLabelIndex())) {
             return true;
         }
 

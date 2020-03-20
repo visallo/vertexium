@@ -9,8 +9,12 @@ import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.LazyMutableProperty;
 import org.vertexium.accumulo.MetadataEntry;
 import org.vertexium.accumulo.MetadataRef;
-import org.vertexium.accumulo.iterator.model.*;
+import org.vertexium.accumulo.iterator.model.Edges;
+import org.vertexium.accumulo.iterator.model.ElementData;
 import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
+import org.vertexium.accumulo.models.AccumuloEdgeInfo;
+import org.vertexium.accumulo.models.AccumuloEdgesWithEdgeInfo;
+import org.vertexium.accumulo.models.EdgesWithCount;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.xerial.snappy.SnappyInputStream;
 
@@ -157,7 +161,7 @@ public class DataInputStreamUtils {
     }
 
     private static Edges decodeEdgesWithRefs(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy, FetchHints fetchHints) throws IOException {
-        EdgesWithEdgeInfo edges = new EdgesWithEdgeInfo();
+        AccumuloEdgesWithEdgeInfo edges = new AccumuloEdgesWithEdgeInfo();
         int count = in.readInt();
         for (int i = 0; i < count; i++) {
             String label = decodeString(in);
@@ -176,7 +180,7 @@ public class DataInputStreamUtils {
                 } else {
                     vertexId = null;
                 }
-                EdgeInfo edgeInfo = new EdgeInfo(nameSubstitutionStrategy.inflate(label), vertexId, timestamp, fetchHints.isIncludeEdgeVertexIds());
+                AccumuloEdgeInfo edgeInfo = new AccumuloEdgeInfo(nameSubstitutionStrategy.inflate(label), vertexId, timestamp, fetchHints.isIncludeEdgeVertexIds());
                 edges.add(edgeId, edgeInfo);
             }
         }

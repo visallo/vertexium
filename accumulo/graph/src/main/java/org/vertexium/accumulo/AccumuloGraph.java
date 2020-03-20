@@ -30,13 +30,13 @@ import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.*;
-import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
 import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.accumulo.keys.KeyHelper;
+import org.vertexium.accumulo.models.AccumuloEdgeInfo;
 import org.vertexium.accumulo.util.*;
 import org.vertexium.event.*;
 import org.vertexium.historicalEvent.HistoricalEvent;
@@ -2685,8 +2685,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         continue;
                     }
 
-                    org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo
-                        = new EdgeInfo(row.getValue().get(), row.getKey().getTimestamp());
+                    AccumuloEdgeInfo edgeInfo = AccumuloEdgeInfo.parse(row.getValue().get(), row.getKey().getTimestamp());
                     String edgeId = row.getKey().getColumnQualifier().toString();
                     String outVertexId = row.getKey().getRow().toString();
                     String inVertexId = edgeInfo.getVertexId();

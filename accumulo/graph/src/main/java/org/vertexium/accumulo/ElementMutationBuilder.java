@@ -9,7 +9,7 @@ import org.apache.hadoop.io.Text;
 import org.cache2k.Cache;
 import org.cache2k.Cache2kBuilder;
 import org.vertexium.*;
-import org.vertexium.accumulo.iterator.model.EdgeInfo;
+import org.vertexium.accumulo.models.AccumuloEdgeInfo;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
@@ -316,12 +316,12 @@ public abstract class ElementMutationBuilder {
 
         // out vertex.
         Text vertexOutIdRowKey = new Text(edge.getVertexId(Direction.OUT));
-        org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.IN));
+        AccumuloEdgeInfo edgeInfo = new AccumuloEdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.IN));
         results.add(new KeyValuePair(new Key(vertexOutIdRowKey, AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, timestamp), edgeInfo.toValue()));
 
         // in vertex.
         Text vertexInIdRowKey = new Text(edge.getVertexId(Direction.IN));
-        edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.OUT));
+        edgeInfo = new AccumuloEdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.OUT));
         results.add(new KeyValuePair(new Key(vertexInIdRowKey, AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, timestamp), edgeInfo.toValue()));
 
         return results;
@@ -405,13 +405,13 @@ public abstract class ElementMutationBuilder {
 
         // Update out vertex.
         Mutation addEdgeToOutMutation = new Mutation(outVertexId);
-        EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), inVertexId);
+        AccumuloEdgeInfo edgeInfo = new AccumuloEdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), inVertexId);
         addEdgeToOutMutation.put(AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToOutMutation);
 
         // Update in vertex.
         Mutation addEdgeToInMutation = new Mutation(inVertexId);
-        edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), outVertexId);
+        edgeInfo = new AccumuloEdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), outVertexId);
         addEdgeToInMutation.put(AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToInMutation);
     }
@@ -490,7 +490,7 @@ public abstract class ElementMutationBuilder {
         if (currentColumnVisibility.equals(newColumnVisibility)) {
             return false;
         }
-        EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edge.getLabel()), edge.getVertexId(Direction.IN));
+        AccumuloEdgeInfo edgeInfo = new AccumuloEdgeInfo(getNameSubstitutionStrategy().deflate(edge.getLabel()), edge.getVertexId(Direction.IN));
         vertexOutMutation.putDelete(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), currentColumnVisibility);
         vertexOutMutation.put(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
         return true;
@@ -502,7 +502,7 @@ public abstract class ElementMutationBuilder {
         if (currentColumnVisibility.equals(newColumnVisibility)) {
             return false;
         }
-        EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edge.getLabel()), edge.getVertexId(Direction.OUT));
+        AccumuloEdgeInfo edgeInfo = new AccumuloEdgeInfo(getNameSubstitutionStrategy().deflate(edge.getLabel()), edge.getVertexId(Direction.OUT));
         vertexInMutation.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), currentColumnVisibility);
         vertexInMutation.put(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
         return true;

@@ -204,28 +204,28 @@ public class HistoricalEventsIterator extends RowEncodingIterator {
                 ));
             } else if (elementType == ElementType.VERTEX && (r.columnFamilyEquals(VertexIterator.CF_OUT_EDGE_BYTES) || r.columnFamilyEquals(VertexIterator.CF_IN_EDGE_BYTES))) {
                 state.emitPropertyEvent();
-                EdgeInfo edgeInfo = EdgeInfo.parse(r.takeValue(), timestamp);
+                IteratorEdgeInfo edgeInfo = new IteratorEdgeInfo(state.edgeLabels, r.takeValue().get(), timestamp);
                 ByteSequence edgeId = r.takeColumnQualifierByteSequence();
                 state.addEdgeInfo(edgeId, edgeInfo);
                 state.events.add(new IteratorHistoricalAddEdgeToVertexEvent(
                     state.elementId,
                     edgeId,
                     r.columnFamilyEquals(VertexIterator.CF_OUT_EDGE_BYTES) ? Direction.OUT : Direction.IN,
-                    edgeInfo.getLabel(),
-                    edgeInfo.getVertexId(),
+                    state.edgeLabels.get(edgeInfo.getLabelIndex()),
+                    edgeInfo.getVertexIdBytes(),
                     r.takeColumnVisibilityByteSequence(),
                     timestamp
                 ));
             } else if (elementType == ElementType.VERTEX && (r.columnFamilyEquals(VertexIterator.CF_OUT_EDGE_SOFT_DELETE_BYTES) || r.columnFamilyEquals(VertexIterator.CF_IN_EDGE_SOFT_DELETE_BYTES))) {
                 state.emitPropertyEvent();
                 ByteSequence edgeId = r.takeColumnQualifierByteSequence();
-                EdgeInfo edgeInfo = state.edgeInfos.get(edgeId);
+                IteratorEdgeInfo edgeInfo = state.edgeInfos.get(edgeId);
                 state.events.add(new IteratorHistoricalSoftDeleteEdgeToVertexEvent(
                     state.elementId,
                     edgeId,
                     r.columnFamilyEquals(VertexIterator.CF_OUT_EDGE_SOFT_DELETE_BYTES) ? Direction.OUT : Direction.IN,
-                    edgeInfo == null ? null : edgeInfo.getLabel(),
-                    edgeInfo == null ? null : edgeInfo.getVertexId(),
+                    edgeInfo == null ? null : state.edgeLabels.get(edgeInfo.getLabelIndex()),
+                    edgeInfo == null ? null : edgeInfo.getVertexIdBytes(),
                     r.takeColumnVisibilityByteSequence(),
                     timestamp,
                     readSoftDeleteValue(r)
@@ -393,10 +393,11 @@ public class HistoricalEventsIterator extends RowEncodingIterator {
         ByteSequence lastEdgeLabel;
         final Map<String, Value> previousPropertyValues = new HashMap<>();
         final Map<String, Long> previousPropertyValueTimestamps = new HashMap<>();
-        final Map<ByteSequence, EdgeInfo> edgeInfos = new HashMap<>();
+        final Map<ByteSequence, IteratorEdgeInfo> edgeInfos = new HashMap<>();
         final Map<String, ByteSequence> edgeOutVertexIds = new HashMap<>();
         final Map<String, ByteSequence> edgeInVertexIds = new HashMap<>();
         final Map<String, ByteSequence> edgeEdgeLabels = new HashMap<>();
+        EdgeLabels edgeLabels = new EdgeLabels();
 
         HistoricalEventState(ElementType elementType, String elementId, IteratorHistoricalEventsFetchHints fetchHints) {
             this.elementType = elementType;
@@ -577,7 +578,7 @@ public class HistoricalEventsIterator extends RowEncodingIterator {
             lastVisibility = null;
         }
 
-        public void addEdgeInfo(ByteSequence edgeId, EdgeInfo edgeInfo) {
+        public void addEdgeInfo(ByteSequence edgeId, IteratorEdgeInfo edgeInfo) {
             edgeInfos.put(edgeId, edgeInfo);
         }
     }

@@ -14,8 +14,8 @@ public class EdgeElementData extends ElementData {
     public Long outVertexIdTimestamp;
 
     @Override
-    public void clear() {
-        super.clear();
+    public void clear(EdgeLabels edgeLabels) {
+        super.clear(edgeLabels);
         inVertexId = null;
         outVertexId = null;
         label = null;

@@ -1,21 +1,21 @@
 package org.vertexium.accumulo;
 
-import org.vertexium.accumulo.iterator.model.EdgeInfo;
+import org.vertexium.accumulo.models.AccumuloEdgeInfo;
 import org.vertexium.util.LookAheadIterable;
 
 import java.util.Iterator;
 
-class GetVertexIdsIterable extends LookAheadIterable<EdgeInfo, String> {
-    private final Iterable<EdgeInfo> edgeInfos;
+class GetVertexIdsIterable extends LookAheadIterable<AccumuloEdgeInfo, String> {
+    private final Iterable<AccumuloEdgeInfo> edgeInfos;
     private final String[] labels;
 
-    public GetVertexIdsIterable(Iterable<EdgeInfo> edgeInfos, String[] labels) {
+    public GetVertexIdsIterable(Iterable<AccumuloEdgeInfo> edgeInfos, String[] labels) {
         this.edgeInfos = edgeInfos;
         this.labels = labels;
     }
 
     @Override
-    protected boolean isIncluded(EdgeInfo edgeInfo, String vertexId) {
+    protected boolean isIncluded(AccumuloEdgeInfo edgeInfo, String vertexId) {
         if (labels == null || labels.length == 0) {
             return true;
         }
@@ -28,12 +28,12 @@ class GetVertexIdsIterable extends LookAheadIterable<EdgeInfo, String> {
     }
 
     @Override
-    protected String convert(EdgeInfo edgeInfo) {
+    protected String convert(AccumuloEdgeInfo edgeInfo) {
         return edgeInfo.getVertexId();
     }
 
     @Override
-    protected Iterator<EdgeInfo> createIterator() {
+    protected Iterator<AccumuloEdgeInfo> createIterator() {
         return edgeInfos.iterator();
     }
 }

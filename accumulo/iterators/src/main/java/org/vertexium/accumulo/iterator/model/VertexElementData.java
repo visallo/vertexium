@@ -11,17 +11,17 @@ import java.util.List;
 import java.util.Set;
 
 public class VertexElementData extends ElementData {
-    public final EdgesWithEdgeInfo outEdges = new EdgesWithEdgeInfo();
-    public final EdgesWithEdgeInfo inEdges = new EdgesWithEdgeInfo();
+    public final IteratorEdgesWithEdgeInfo outEdges = new IteratorEdgesWithEdgeInfo();
+    public final IteratorEdgesWithEdgeInfo inEdges = new IteratorEdgesWithEdgeInfo();
     public final Set<Text> hiddenEdges = new HashSet<>();
     public final List<SoftDeleteEdgeInfo> outSoftDeletes = new ArrayList<>();
     public final List<SoftDeleteEdgeInfo> inSoftDeletes = new ArrayList<>();
 
     @Override
-    public void clear() {
-        super.clear();
-        outEdges.clear();
-        inEdges.clear();
+    public void clear(EdgeLabels edgeLabels) {
+        super.clear(edgeLabels);
+        outEdges.clear(edgeLabels);
+        inEdges.clear(edgeLabels);
         hiddenEdges.clear();
         outSoftDeletes.clear();
         inSoftDeletes.clear();

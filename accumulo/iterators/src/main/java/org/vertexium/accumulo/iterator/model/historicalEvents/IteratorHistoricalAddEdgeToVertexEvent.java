@@ -13,24 +13,24 @@ import java.io.IOException;
 public class IteratorHistoricalAddEdgeToVertexEvent extends IteratorHistoricalEvent {
     private final ByteSequence edgeId;
     private final Direction edgeDirection;
-    private final String edgeLabel;
-    private final String otherVertexId;
+    private final byte[] edgeLabelBytes;
+    private final byte[] otherVertexIdBytes;
     private final ByteSequence edgeVisibility;
 
     public IteratorHistoricalAddEdgeToVertexEvent(
         String elementId,
         ByteSequence edgeId,
         Direction edgeDirection,
-        String edgeLabel,
-        String otherVertexId,
+        byte[] edgeLabelBytes,
+        byte[] otherVertexIdBytes,
         ByteSequence edgeVisibility,
         long timestamp
     ) {
         super(ElementType.VERTEX, elementId, timestamp);
         this.edgeId = edgeId;
         this.edgeDirection = edgeDirection;
-        this.edgeLabel = edgeLabel;
-        this.otherVertexId = otherVertexId;
+        this.edgeLabelBytes = edgeLabelBytes;
+        this.otherVertexIdBytes = otherVertexIdBytes;
         this.edgeVisibility = edgeVisibility;
     }
 
@@ -42,12 +42,12 @@ public class IteratorHistoricalAddEdgeToVertexEvent extends IteratorHistoricalEv
         return edgeDirection;
     }
 
-    public String getEdgeLabel() {
-        return edgeLabel;
+    public byte[] getEdgeLabelBytes() {
+        return edgeLabelBytes;
     }
 
-    public String getOtherVertexId() {
-        return otherVertexId;
+    public byte[] getOtherVertexIdBytes() {
+        return otherVertexIdBytes;
     }
 
     public ByteSequence getEdgeVisibility() {
@@ -57,15 +57,15 @@ public class IteratorHistoricalAddEdgeToVertexEvent extends IteratorHistoricalEv
     static IteratorHistoricalEvent decode(DataInputStream in, String elementId, long timestamp) throws IOException {
         ByteSequence edgeId = DataInputStreamUtils.decodeByteSequence(in);
         Direction edgeDirection = DataInputStreamUtils.decodeDirection(in);
-        String edgeLabel = DataInputStreamUtils.decodeString(in);
-        String otherVertexId = DataInputStreamUtils.decodeString(in);
+        byte[] edgeLabelBytes = DataInputStreamUtils.decodeByteArray(in);
+        byte[] otherVertexIdBytes = DataInputStreamUtils.decodeByteArray(in);
         ByteSequence edgeVisibility = DataInputStreamUtils.decodeByteSequence(in);
         return new IteratorHistoricalAddEdgeToVertexEvent(
             elementId,
             edgeId,
             edgeDirection,
-            edgeLabel,
-            otherVertexId,
+            edgeLabelBytes,
+            otherVertexIdBytes,
             edgeVisibility,
             timestamp
         );
@@ -76,8 +76,8 @@ public class IteratorHistoricalAddEdgeToVertexEvent extends IteratorHistoricalEv
         super.encode(out);
         DataOutputStreamUtils.encodeByteSequence(out, getEdgeId());
         DataOutputStreamUtils.encodeDirection(out, getEdgeDirection());
-        DataOutputStreamUtils.encodeString(out, getEdgeLabel());
-        DataOutputStreamUtils.encodeString(out, getOtherVertexId());
+        DataOutputStreamUtils.encodeByteArray(out, getEdgeLabelBytes());
+        DataOutputStreamUtils.encodeByteArray(out, getOtherVertexIdBytes());
         DataOutputStreamUtils.encodeByteSequence(out, getEdgeVisibility());
     }
 
