@@ -7,6 +7,7 @@
 * Changed: Elasticsearch: Throw better exceptions when elements are missing in missing document helper
 * Changed: Elasticsearch: bulk to squash multiple updates to same element into a single update
 * Changed: Accumulo: use a string lookup to store label strings to reduce memory usage when reading vertices with large number of edges
+* Changed: InMemory: Support property graph queries with FetchHints.NONE
 * Fixed: Accumulo: don't queue events when no event listeners are attached
 
 # v4.9.7

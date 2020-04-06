@@ -8,11 +8,13 @@ import org.vertexium.mutation.*;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.FilterIterable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase {
+public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase implements HasPropertiesIgnoringFetchHints {
     private final String id;
     private final FetchHints fetchHints;
     private InMemoryGraph graph;
@@ -198,6 +200,30 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             throw new VertexiumMissingFetchHintException(getFetchHints(), "includeProperties");
         }
         return inMemoryTableElement.getProperties(fetchHints, endTime, authorizations);
+    }
+
+    @Override
+    public Iterable<Property> getPropertiesIgnoringFetchHints() {
+        return inMemoryTableElement.getProperties(fetchHints, endTime, authorizations);
+    }
+
+    @Override
+    public Iterable<Property> getPropertiesIgnoringFetchHints(String key, String name) {
+        Property reservedProperty = getReservedProperty(name);
+        if (reservedProperty != null) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(reservedProperty);
+            return result;
+        }
+        return new FilterIterable<Property>(getPropertiesIgnoringFetchHints()) {
+            @Override
+            protected boolean isIncluded(Property property) {
+                if (key != null && !property.getKey().equals(key)) {
+                    return false;
+                }
+                return property.getName().equals(name);
+            }
+        };
     }
 
     @Override

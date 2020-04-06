@@ -552,7 +552,10 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         @Override
         public boolean isMatch(VertexiumObject vertexiumObject) {
             for (String key : this.keys) {
-                if (this.predicate.evaluate(vertexiumObject.getProperties(key), this.value, this.propertyDefinitions)) {
+                Iterable<Property> properties = vertexiumObject instanceof HasPropertiesIgnoringFetchHints
+                    ? ((HasPropertiesIgnoringFetchHints) vertexiumObject).getPropertiesIgnoringFetchHints(key)
+                    : vertexiumObject.getProperties(key);
+                if (this.predicate.evaluate(properties, this.value, this.propertyDefinitions)) {
                     return true;
                 }
             }

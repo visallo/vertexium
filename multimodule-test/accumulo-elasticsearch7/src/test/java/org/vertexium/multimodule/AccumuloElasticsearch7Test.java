@@ -82,11 +82,6 @@ public class AccumuloElasticsearch7Test extends AccumuloGraphTestBase {
     }
 
     @Override
-    protected boolean isFetchHintNoneVertexQuerySupported() {
-        return true;
-    }
-
-    @Override
     protected boolean isLuceneQueriesSupported() {
         return true;
     }
