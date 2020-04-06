@@ -2591,8 +2591,6 @@ public abstract class GraphTestBase {
         assertIdsAnyOrder(idsIterable, "v1", "v2", "v3", "e1", "e2");
         assertResultsCount(5, 5, idsIterable);
 
-        assumeTrue("FetchHints.NONE vertex queries are not supported", isFetchHintNoneVertexQuerySupported());
-
         idsIterable = graph.query(AUTHORIZATIONS_A).has(namePropertyName).vertexIds();
         assertIdsAnyOrder(idsIterable, "v1");
         assertResultsCount(1, 1, idsIterable);

@@ -86,9 +86,4 @@ public class InMemoryGraphTest extends GraphTestBase {
             assertEquals(String.class, ex.getValueClass());
         }
     }
-
-    @Override
-    protected boolean isFetchHintNoneVertexQuerySupported() {
-        return false;
-    }
 }
