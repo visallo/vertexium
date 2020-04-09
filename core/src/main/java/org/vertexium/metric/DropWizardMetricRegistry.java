@@ -38,6 +38,7 @@ public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
 
         if (startConsoleReporter.equalsIgnoreCase("true") || startConsoleReporter.length() == 0) {
             startConsoleReporter(10, TimeUnit.SECONDS);
+            return;
         }
 
         startConsoleReporter(startConsoleReporter);
