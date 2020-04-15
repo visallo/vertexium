@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.vertexium</groupId>
         <artifactId>vertexium-root</artifactId>
-        <version>4.9.8-SNAPSHOT</version>
+        <version>4.10.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>vertexium-multimodule-test</artifactId>
