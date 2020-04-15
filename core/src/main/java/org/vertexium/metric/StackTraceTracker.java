@@ -1,11 +1,12 @@
 package org.vertexium.metric;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class StackTraceTracker {
-    private final Set<StackTraceItem> roots = new HashSet<>();
+    private final Set<StackTraceItem> roots = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public void addStackTrace() {
         addStackTrace(Thread.currentThread().getStackTrace());
@@ -65,7 +66,7 @@ public class StackTraceTracker {
     }
 
     public static class StackTraceItem {
-        private final Set<StackTraceItem> children = new HashSet<>();
+        private final Set<StackTraceItem> children = Collections.newSetFromMap(new ConcurrentHashMap<>());
         private final StackTraceElement stackTraceElement;
         private int count;
 

@@ -9,6 +9,7 @@
 * Changed: Accumulo: use a string lookup to store label strings to reduce memory usage when reading vertices with large number of edges
 * Changed: InMemory: Support property graph queries with FetchHints.NONE
 * Fixed: Accumulo: don't queue events when no event listeners are attached
+* Fixed: Concurrency issue in org.vertexium.metric.StackTraceTracker
 
 # v4.9.7
 * Fixed: Sorting issue when ElasticSearch attempts to implicitly cast Date Times to Doubles in search query string
