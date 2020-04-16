@@ -4,6 +4,7 @@ import org.vertexium.property.StreamingPropertyValue;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class StreamingPropertyValueData {
     private final StreamingPropertyValue streamingPropertyValue;
@@ -16,12 +17,21 @@ public class StreamingPropertyValueData {
         this.size = size;
     }
 
+    /**
+     * This property is here to get a reference to the {@link StreamingPropertyValue} that this data came from and
+     * should not be read from using methods such as {@link StreamingPropertyValue#getInputStream()} or
+     * {@link StreamingPropertyValue#readToString()}.
+     */
     public StreamingPropertyValue getStreamingPropertyValue() {
         return streamingPropertyValue;
     }
 
     public byte[] getData() {
         return data;
+    }
+
+    public String getDataAsString() {
+        return new String(getData(), StandardCharsets.UTF_8);
     }
 
     public int getSize() {
