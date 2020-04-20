@@ -6739,6 +6739,38 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testChangeVisibilityOnStreamingPropertyWherePropertyAlreadyExists() {
+        PropertyValue propSmall_value1 = StreamingPropertyValue.create(new ByteArrayInputStream("value1".getBytes()), String.class);
+        PropertyValue propSmall_value2 = StreamingPropertyValue.create(new ByteArrayInputStream("value2".getBytes()), String.class);
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("propSmall", propSmall_value1, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("propSmall", propSmall_value2, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties()));
+
+        Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
+        Property propSmallVisibilityA = v1.getProperty("", "propSmall", VISIBILITY_A);
+        v1.prepareMutation()
+            .alterPropertyVisibility(propSmallVisibilityA, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<Property> properties = toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties());
+        assertEquals(1, properties.size());
+        Property property = properties.get(0);
+        StreamingPropertyValue spv = (StreamingPropertyValue) property.getValue();
+        assertEquals(VISIBILITY_B, property.getVisibility());
+        assertEquals("value1", spv.readToString());
+    }
+
+    @Test
     public void testChangePropertyMetadata() {
         Metadata prop1Metadata = Metadata.create();
         prop1Metadata.add("prop1_key1", "valueOld", VISIBILITY_EMPTY);

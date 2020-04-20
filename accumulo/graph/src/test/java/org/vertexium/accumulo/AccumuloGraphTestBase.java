@@ -18,6 +18,7 @@ import org.vertexium.accumulo.models.AccumuloEdgeInfo;
 import org.vertexium.accumulo.tools.DeleteHistoricalLegacyStreamingPropertyValueData;
 import org.vertexium.accumulo.util.DataInDataTableStreamingPropertyValueStorageStrategy;
 import org.vertexium.property.MutablePropertyImpl;
+import org.vertexium.property.PropertyValue;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.VertexiumLogger;
@@ -34,6 +35,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.vertexium.accumulo.ElementMutationBuilder.EMPTY_TEXT;
 import static org.vertexium.accumulo.iterator.model.KeyBase.VALUE_SEPARATOR;
 import static org.vertexium.accumulo.keys.KeyHelper.getColumnQualifierFromPropertyColumnQualifier;
+import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
 public abstract class AccumuloGraphTestBase extends GraphTestBase {
@@ -572,6 +574,20 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         printTable(tableName, authorizations);
     }
 
+    public void printTableConfiguration(String tableName) {
+        try {
+            List<Map.Entry<String, String>> properties = toList(getGraph().getConnector().tableOperations().getProperties(tableName));
+            int longestKey = properties.stream().mapToInt(p -> p.getKey().length()).max().orElse(0);
+            properties.stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(property -> {
+                    System.out.println(String.format("%-" + longestKey + "s = %s", property.getKey(), property.getValue()));
+                });
+        } catch (Exception e) {
+            throw new VertexiumException("could not print config", e);
+        }
+    }
+
     public void printTable(String tableName, Authorizations authorizations) {
         System.out.println(tableName);
         try {
@@ -599,7 +615,13 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         if (rowEntries.size() == 0) {
             return;
         }
-        rowEntries.sort(Comparator.comparingLong(o -> o.getKey().getTimestamp()));
+        rowEntries.sort(Comparator.comparing(o -> {
+            return o.getKey().getRow().toString()
+                + o.getKey().getColumnFamily()
+                + o.getKey().getColumnQualifier()
+                + o.getKey().getColumnVisibility()
+                + o.getKey().getTimestamp();
+        }));
         for (Map.Entry<Key, Value> rowEntry : rowEntries) {
             printRow(rowEntry);
         }
@@ -607,12 +629,12 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
     private void printRow(Map.Entry<Key, Value> rowEntry) {
         System.out.println(String.format(
-            "%s:%d:%s:%s[%s] => %s",
+            "%s:%s:%s[%s] %d => %s",
             rowEntry.getKey().getRow(),
-            rowEntry.getKey().getTimestamp(),
             rowEntry.getKey().getColumnFamily(),
             rowEntry.getKey().getColumnQualifier(),
             rowEntry.getKey().getColumnVisibility(),
+            rowEntry.getKey().getTimestamp(),
             rowEntry.getValue()
         ));
     }

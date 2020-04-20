@@ -78,8 +78,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private static final Authorizations METADATA_AUTHORIZATIONS = new AccumuloAuthorizations();
     public static final int SINGLE_VERSION = 1;
     public static final Integer ALL_VERSIONS = null;
-    private static final int ACCUMULO_DEFAULT_VERSIONING_ITERATOR_PRIORITY = 20;
-    private static final String ACCUMULO_DEFAULT_VERSIONING_ITERATOR_NAME = "vers";
+    static final int ACCUMULO_DEFAULT_VERSIONING_ITERATOR_PRIORITY = 20;
+    static final String ACCUMULO_DEFAULT_VERSIONING_ITERATOR_NAME = "vers";
     private static final ColumnVisibility EMPTY_COLUMN_VISIBILITY = new ColumnVisibility();
     private static final String CLASSPATH_CONTEXT_NAME = "vertexium";
     private final Connector connector;

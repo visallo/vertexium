@@ -66,7 +66,7 @@ public class AccumuloResource extends ExternalResource {
     public void dropGraph() throws Exception {
         Connector connector = createConnector();
         AccumuloGraphTestUtils.ensureTableExists(connector, GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getDataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getDataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX), 1);
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
