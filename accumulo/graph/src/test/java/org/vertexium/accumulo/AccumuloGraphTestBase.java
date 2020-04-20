@@ -326,6 +326,46 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     }
 
     @Test
+    public void testChangeVisibilityOnStreamingPropertyWhereVertexIsModifiedByAnotherProcess() throws AccumuloSecurityException, TableNotFoundException, AccumuloException {
+        PropertyValue propSmall_value1 = StreamingPropertyValue.create(new ByteArrayInputStream("value1".getBytes()), String.class);
+        PropertyValue propSmall_value2 = StreamingPropertyValue.create(new ByteArrayInputStream("value2".getBytes()), String.class);
+
+        // create a vertex with SPV propSmall
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("propSmall", propSmall_value1, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        // process 1 gets the vertex and propSmall vertex
+        Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
+        Property propSmallVisibilityA = v1.getProperty("", "propSmall", VISIBILITY_A);
+
+        // process 2 updates propSmall
+        graph.getVertex("v1", AUTHORIZATIONS_A_AND_B)
+            .prepareMutation()
+            .setProperty("propSmall", propSmall_value2, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties()));
+
+        getGraph().getConnector().tableOperations().compact(getGraph().getDataTableName(), null, null, true, true);
+
+        // process 1 alters the visibility of propSmall
+        v1.prepareMutation()
+            .alterPropertyVisibility(propSmallVisibilityA, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<Property> properties = toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties());
+        assertEquals(1, properties.size());
+        Property property = properties.get(0);
+        StreamingPropertyValue spv = (StreamingPropertyValue) property.getValue();
+        assertEquals(VISIBILITY_B, property.getVisibility());
+        assertEquals("value1", spv.readToString());
+    }
+
+    @Test
     public void testDataTableStreamingPropertyValuesStoreRefInElementTable() throws Exception {
         assumeTrue(getGraph().getStreamingPropertyValueStorageStrategy() instanceof DataInDataTableStreamingPropertyValueStorageStrategy);
 
