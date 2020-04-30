@@ -25,5 +25,9 @@ public abstract class ProgressCallback {
         public String formatMessage(Integer edgeIndex, Integer vertexCount) {
             return String.format(this.messageFormat, edgeIndex, vertexCount);
         }
+
+        public String getMessageFormat() {
+            return this.messageFormat;
+        }
     }
 }
