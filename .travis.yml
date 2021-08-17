@@ -1,5 +1,5 @@
 language: java
-script: travis_wait 60 mvn test -Pnolog,$TEST_EXECUTION_PROFILE
+script: mvn test -Pnolog,$TEST_EXECUTION_PROFILE
 jdk:
   - openjdk8
 env:
@@ -13,3 +13,7 @@ branches:
   only:
     - master
     - 2.5.x
+
+cache:
+  directories:
+  - $HOME/.m2
